@@ -206,6 +206,8 @@ Color GetColor(double approve) {
 // 初期化
 void Initialize(int difficulty) {
 	for (int i = 0; i < 47; i++) approval_rate[i] = 0.5;
+	for (int i = 0; i < 47; i++) history[0].approval[i] = 0.5;
+	history[0].expc_score = 465.0 / 2.0;
 
 	// 難易度の調整
 	if (difficulty == 1) {
@@ -217,7 +219,7 @@ void Initialize(int difficulty) {
 	if (difficulty == 2) {
 		usr[0] = Player{ 5, 500, 300, 0, 1 };
 		usr[1] = Player{ 5, 500, 300, 0, 1 };
-		ai_sentakusi = 3;
+		ai_sentakusi = 4;
 		playing_level = U"普通";
 	}
 	if (difficulty == 3) {
@@ -718,7 +720,6 @@ void Main() {
 			int day_ = (turns / 6) + 1;
 			int tm_ = ((turns / 2) % 3) + 1;
 			int player_id = turns % 2;
-			if (turns % 2 == 0) Record_History(turns / 2);
 
 			// A. 日本地図の描画
 			for (int i = 0; i < 47; i++) {
@@ -731,8 +732,23 @@ void Main() {
 				}
 				Rect(lx + 2.0, ly + 2.0, (rx - lx) - 4.0, (ry - ly) - 4.0).draw(GetColor(approval_rate[i]));
 				if (situation % 100 == 7) {
-					if (enzetsu_cost[i] == 2) font14(U"★").draw(14, (lx + rx) / 2.0 - 8.0, (ly + ry) / 2.0 - 12.5, col_m2);
-					if (enzetsu_cost[i] >= 3) font14(U"◆").draw(14, (lx + rx) / 2.0 - 8.0, (ly + ry) / 2.0 - 12.5, col_m2);
+					if (chizu_mode == 1) {
+						if (enzetsu_cost[i] == 2) font14(U"★").draw(14, (lx + rx) / 2.0 - 8.0, (ly + ry) / 2.0 - 12.5, col_m2);
+						if (enzetsu_cost[i] >= 3) font14(U"◆").draw(14, (lx + rx) / 2.0 - 8.0, (ly + ry) / 2.0 - 12.5, col_m2);
+					}
+					else {
+						if (enzetsu_cost[i] == 1) {
+							font14(giseki[i]).draw(14, (lx + rx) / 2.0 - 4.0 * to_string(giseki[i]).size(), (ly + ry) / 2.0 - 12.5, col_m2);
+						}
+						if (enzetsu_cost[i] == 2) {
+							font11(U"★").draw(11, (lx + rx) / 2.0 - 11.9, (ly + ry) / 2.0 - 10.5, col_m2);
+							font11(giseki[i]).draw(11, (lx + rx) / 2.0 - 1.9, (ly + ry) / 2.0 - 10.5, col_m2);
+						}
+						if (enzetsu_cost[i] >= 3) {
+							font11(U"◆").draw(11, (lx + rx) / 2.0 - 11.9, (ly + ry) / 2.0 - 10.5, col_m2);
+							font11(giseki[i]).draw(11, (lx + rx) / 2.0 - 1.9, (ly + ry) / 2.0 - 10.5, col_m2);
+						}
+					}
 				}
 				if (situation % 100 != 7 && chizu_mode == 2) {
 					font14(giseki[i]).draw(14, (lx + rx) / 2.0 - 4.0 * to_string(giseki[i]).size(), (ly + ry) / 2.0 - 12.5, col_m2);
@@ -1185,6 +1201,11 @@ void Main() {
 						else if (turns == 6) situation = 1000;
 						else if (turns % 6 == 0) { kakusan(); situation = 1001; }
 						else situation = 1006;
+						if (turns % 2 == 0) {
+							pair<double, double> expc_new = Calc_Giseki();
+							history[turns / 2].expc_score = expc_new.first + expc_new.second;
+							for (int i = 0; i < 47; i++) history[turns / 2].approval[i] = approval_rate[i];
+						}
 					}
 				}
 				else if (situation % 1000 == 7) {
